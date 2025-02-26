@@ -45,6 +45,40 @@ JWT_SECRET=your_jwt_secret_key
 JWT_EXPIRY=24h
 ```
 
+4. Start the server:
+```bash
+npm start
+```
+
+5. Launch the demo client:
+```bash
+cd mock-client
+# On Linux/Mac
+open index.html
+# Or on Windows
+start index.html
+```
+
+### Demo Requirements
+- MetaMask browser extension installed and configured
+- Modern web browser (Chrome, Firefox, or Edge recommended)
+- Active internet connection for MetaMask and MongoDB connectivity
+
+### Testing the Demo
+1. Open the demo client in your browser
+2. Click "Connect Wallet" to connect your MetaMask
+3. Approve the MetaMask connection when prompted
+4. Click "Authenticate" to start the authentication process
+5. Sign the message in MetaMask when requested
+6. You'll see the authentication token displayed upon success
+
+### Demo Features
+- Wallet connection status display
+- Real-time authentication feedback
+- JWT token display
+- Automatic session management
+- Clean, responsive interface
+
 ## Project Structure
 ```
 ├── src/
