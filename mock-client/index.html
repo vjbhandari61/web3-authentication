@@ -87,7 +87,6 @@
         const API_URL = 'http://localhost:3000/api/auth';
         let currentUser = null;
 
-        // Check if MetaMask is installed
         async function checkMetaMask() {
             if (typeof window.ethereum === 'undefined') {
                 showStatus('Please install MetaMask!', 'error');
@@ -96,7 +95,6 @@
             return true;
         }
 
-        // Connect Wallet
         async function connectWallet() {
             if (!await checkMetaMask()) return;
 
@@ -115,7 +113,6 @@
             }
         }
 
-        // Authenticate
         async function authenticate() {
             if (!currentUser) {
                 showStatus('Please connect your wallet first!', 'error');
@@ -123,7 +120,6 @@
             }
 
             try {
-                // Get nonce
                 const nonceResponse = await fetch(`${API_URL}/nonce`, {
                     method: 'POST',
                     headers: {
@@ -137,13 +133,11 @@
                     throw new Error('Failed to get nonce');
                 }
 
-                // Sign message - Updated for ethers v6
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
                 const message = `Sign this message: ${nonceData.nonce}`;
                 const signature = await signer.signMessage(message);
 
-                // Verify signature and get token
                 const authResponse = await fetch(`${API_URL}/authorize`, {
                     method: 'POST',
                     headers: {
@@ -167,7 +161,6 @@
             }
         }
 
-        // Logout
         function logout() {
             localStorage.removeItem('authToken');
             currentUser = null;
@@ -177,14 +170,12 @@
             showStatus('Logged out successfully!', 'success');
         }
 
-        // Utility function to show status messages
         function showStatus(message, type) {
             const statusDiv = document.getElementById('status');
             statusDiv.innerHTML = message;
             statusDiv.className = 'status ' + type;
         }
 
-        // Check if user is already connected
         window.addEventListener('load', async () => {
             if (typeof window.ethereum !== 'undefined') {
                 const accounts = await ethereum.request({ method: 'eth_accounts' });
