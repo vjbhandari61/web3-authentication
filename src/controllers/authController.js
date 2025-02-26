@@ -22,7 +22,7 @@ const generateToken = async (req, res) => {
         if (!user) return res.status(400).json({ error: "User not found" });
 
 
-        const recoveredAddress = await verifyUserSignature(signature);
+        const recoveredAddress = await verifyUserSignature(signature, user.nonce);
         if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
             return res.status(400).json({ error: "Signature verification failed" });
         }

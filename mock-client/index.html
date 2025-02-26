@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Authentication Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 4px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            max-width: 100%;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        #userInfo {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e7f3fe;
+            border-radius: 4px;
+        }
+        .token-text {
+            font-family: monospace;
+            font-size: 14px;
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 5px;
+            border-radius: 3px;
+            display: block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Web3 Authentication Demo</h1>
+        
+        <div id="connectWallet">
+            <button onclick="connectWallet()">Connect Wallet</button>
+        </div>
+
+        <div id="userInfo" style="display: none;">
+            <h3>Connected Wallet</h3>
+            <p>Address: <span id="walletAddress"></span></p>
+            <button onclick="authenticate()">Authenticate</button>
+            <button onclick="logout()">Logout</button>
+        </div>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api/auth';
+        let currentUser = null;
+
+        // Check if MetaMask is installed
+        async function checkMetaMask() {
+            if (typeof window.ethereum === 'undefined') {
+                showStatus('Please install MetaMask!', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // Connect Wallet
+        async function connectWallet() {
+            if (!await checkMetaMask()) return;
+
+            try {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                const account = accounts[0];
+                currentUser = account;
+                
+                document.getElementById('walletAddress').textContent = account;
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('connectWallet').style.display = 'none';
+                
+                showStatus('Wallet connected successfully!', 'success');
+            } catch (error) {
+                showStatus('Failed to connect wallet: ' + error.message, 'error');
+            }
+        }
+
+        // Authenticate
+        async function authenticate() {
+            if (!currentUser) {
+                showStatus('Please connect your wallet first!', 'error');
+                return;
+            }
+
+            try {
+                // Get nonce
+                const nonceResponse = await fetch(`${API_URL}/nonce`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ walletAddress: currentUser })
+                });
+                const nonceData = await nonceResponse.json();
+
+                if (!nonceData.nonce) {
+                    throw new Error('Failed to get nonce');
+                }
+
+                // Sign message - Updated for ethers v6
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const message = `Sign this message: ${nonceData.nonce}`;
+                const signature = await signer.signMessage(message);
+
+                // Verify signature and get token
+                const authResponse = await fetch(`${API_URL}/authorize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        walletAddress: currentUser,
+                        signature: signature
+                    })
+                });
+                const authData = await authResponse.json();
+
+                if (authData.token) {
+                    localStorage.setItem('authToken', authData.token);
+                    showStatus(`Authentication successful:\n<span class="token-text">Bearer ${authData.token}</span>`, 'success');
+                } else {
+                    throw new Error('Authentication failed');
+                }
+            } catch (error) {
+                showStatus('Authentication failed: ' + error.message, 'error');
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('authToken');
+            currentUser = null;
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('connectWallet').style.display = 'block';
+            document.getElementById('walletAddress').textContent = '';
+            showStatus('Logged out successfully!', 'success');
+        }
+
+        // Utility function to show status messages
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = message;
+            statusDiv.className = 'status ' + type;
+        }
+
+        // Check if user is already connected
+        window.addEventListener('load', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                const accounts = await ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    currentUser = accounts[0];
+                    document.getElementById('walletAddress').textContent = currentUser;
+                    document.getElementById('userInfo').style.display = 'block';
+                    document.getElementById('connectWallet').style.display = 'none';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
