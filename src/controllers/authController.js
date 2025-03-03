@@ -2,10 +2,10 @@ const { findUser, createUser, verifyUserSignature, generateUserToken } = require
 
 const generateNonce = async (req, res) => {
     try {
-        const { walletAddress } = req.body;
+        const { walletAddress, walletType } = req.body;
         let user = await findUser(walletAddress);
         if (!user) {
-            user = await createUser(walletAddress);
+            user = await createUser(walletAddress, walletType);
         }
 
         res.status(200).json({ message: "Successful", nonce: user.nonce });
@@ -17,14 +17,13 @@ const generateNonce = async (req, res) => {
 
 const generateToken = async (req, res) => {
     try {
-        const { walletAddress, signature } = req.body;
+        const { walletAddress, signature, walletType } = req.body;
         const user = await findUser(walletAddress);
         if (!user) return res.status(400).json({ error: "User not found" });
 
-
-        const recoveredAddress = await verifyUserSignature(signature, user.nonce);
-        if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-            return res.status(400).json({ error: "Signature verification failed" });
+        const {err} = await verifyUserSignature(signature, user.nonce, walletType, walletAddress);
+        if (err) {
+            return res.status(400).json({ error: err });
         }
 
         user.nonce = Math.floor(Math.random() * 1000000);
