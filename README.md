@@ -17,7 +17,9 @@ This is a secure authentication system that leverages Ethereum wallet signatures
 
 ## Features
 
+- **Multi-Wallet Authentication**: Support for both Ethereum (MetaMask) and Solana (Phantom) wallets
 - **Ethereum Wallet Authentication**: Secure authentication using cryptographic signatures
+- **Solana Wallet Authentication**: Secure authentication using Phantom wallet signatures
 - **Nonce-based Challenge-Response**: Prevents replay attacks with unique nonce generation
 - **JWT Token System**: Secure session management using JSON Web Tokens
 - **MongoDB Integration**: Persistent storage for user data and nonces
@@ -60,19 +62,22 @@ start index.html
 ```
 
 ### Demo Requirements
-- MetaMask browser extension installed and configured
+- MetaMask or Phantom browser extension installed and configured
 - Modern web browser (Chrome, Firefox, or Edge recommended)
-- Active internet connection for MetaMask and MongoDB connectivity
+- Active internet connection for wallet and MongoDB connectivity
 
 ### Testing the Demo
 1. Open the demo client in your browser
-2. Click "Connect Wallet" to connect your MetaMask
-3. Approve the MetaMask connection when prompted
+2. Choose your preferred wallet:
+   - Click "Connect MetaMask" for Ethereum authentication
+   - Click "Connect Phantom" for Solana authentication
+3. Approve the wallet connection when prompted
 4. Click "Authenticate" to start the authentication process
-5. Sign the message in MetaMask when requested
+5. Sign the message in your chosen wallet when requested
 6. You'll see the authentication token displayed upon success
 
 ### Demo Features
+- Multi-wallet support (MetaMask and Phantom)
 - Wallet connection status display
 - Real-time authentication feedback
 - JWT token display
@@ -109,7 +114,8 @@ All routes are prefixed with `/api/auth`
    - **Body**: 
      ```json
      {
-       "walletAddress": "0x..."
+       "walletAddress": "0x...",
+       "walletType": "metamask" | "phantom"
      }
      ```
    - **Response**:
@@ -126,6 +132,7 @@ All routes are prefixed with `/api/auth`
      ```json
      {
        "walletAddress": "0x...",
+       "walletType": "metamask" | "phantom",
        "signature": "0x..."
      }
      ```
@@ -139,17 +146,25 @@ All routes are prefixed with `/api/auth`
 
 ## Authentication Flow
 
-1. **Nonce Generation**
-   - Client sends wallet address to server
+1. **Wallet Connection**
+   - User selects preferred wallet (MetaMask or Phantom)
+   - Application connects to the selected wallet
+   - Wallet address is retrieved
+
+2. **Nonce Generation**
+   - Client sends wallet address and type to server
    - Server generates/retrieves nonce for the address
    - Nonce is stored in database with user record
 
-2. **Signature Creation**
-   - Client signs nonce with Ethereum wallet
-   - Signature and wallet address sent to server
+3. **Signature Creation**
+   - Client signs nonce with selected wallet
+   - For MetaMask: Uses eth_sign method
+   - For Phantom: Uses Solana signMessage method
+   - Signature and wallet details sent to server
 
-3. **Verification & Token Generation**
+4. **Verification & Token Generation**
    - Server verifies signature against stored nonce
+   - Verification method varies by wallet type
    - New nonce generated for next authentication
    - JWT token issued upon successful verification
 
@@ -171,6 +186,8 @@ All routes are prefixed with `/api/auth`
 - **express**: ^4.21.2 - Web framework
 - **mongoose**: ^8.10.1 - MongoDB ODM
 - **ethers**: ^6.13.5 - Ethereum wallet utilities
+- **@solana/web3.js**: ^1.87.6 - Solana wallet utilities
+- **tweetnacl**: ^1.0.3 - Cryptographic operations for Solana
 - **jsonwebtoken**: ^9.0.2 - JWT implementation
 - **bcryptjs**: ^3.0.2 - Password hashing
 - **cors**: ^2.8.5 - Cross-origin resource sharing
